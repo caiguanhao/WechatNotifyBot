@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -87,10 +88,17 @@ func parse(input []byte) *Input {
 }
 
 func main() {
-	err := os.Setenv("HTTP_PROXY", PROXY)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	flag.Parse()
+	if flag.NArg() == 0 {
+		fmt.Fprintln(os.Stderr, "Please provide at least one Telegram chat ID.")
 		os.Exit(1)
+	}
+	if PROXY != "" {
+		err := os.Setenv("HTTP_PROXY", PROXY)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 	stdin, stdinErr := ioutil.ReadAll(os.Stdin)
 	if stdinErr != nil {
@@ -105,12 +113,25 @@ func main() {
 		os.Exit(1)
 	}
 	bot.Debug = false
+	hasError := false
+	for _, arg := range flag.Args() {
+		parts := strings.SplitN(arg, "@", 2)
+		chatId, err := strconv.ParseInt(parts[0], 10, 64)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			hasError = true
+			continue
+		}
+		msg := tgbotapi.NewMessage(chatId, input.String())
+		msg.ParseMode = "Markdown"
+		_, err = bot.Send(msg)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, chatId, err)
+			hasError = true
+		}
+	}
 
-	msg := tgbotapi.NewMessage(TARGET, input.String())
-	msg.ParseMode = "Markdown"
-	_, err = bot.Send(msg)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, TARGET, err)
+	if hasError {
 		os.Exit(1)
 	}
 }

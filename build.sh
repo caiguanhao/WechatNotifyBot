@@ -30,10 +30,6 @@ function update {
     print \"var PROXY = strings.Join([]string{${PROXY}}, \\\"\\\")\"
     next
   }
-  /TARGET/ {
-    print \"var TARGET = int64(${TARGET})\"
-    next
-  }
   {
     print
   }
@@ -43,25 +39,18 @@ function update {
 }
 
 while test -z "$BOTAPI"; do
-  echo -n "Please paste your BOTAPI: (will not be echoed) "
+  echo -n "Please paste your BOTAPI: (required, will not be echoed) "
   read -s BOTAPI
   echo
 done
-while test -z "$PROXY"; do
-  echo -n "Please paste your PROXY: (will not be echoed) "
-  read -s PROXY
-  echo
-done
-while test -z "$TARGET"; do
-  echo -n "Please paste your TARGET: (will not be echoed) "
-  read -s TARGET
-  echo
-done
+
+echo -n "Please paste your PROXY: (optional) "
+read PROXY
+
 update
 
-go build
+go build -v
 
 BOTAPI="botapi"
 PROXY=""
-TARGET="0"
 update
